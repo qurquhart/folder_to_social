@@ -3,6 +3,7 @@ import shutil
 import re
 from logger import Logger, creds
 from twitter_api import twitter_post_media, twitter_config
+from reddit import post_to_reddit
 
 
 #----------------------------------------------------#
@@ -58,9 +59,16 @@ error = Logger("error.txt",
 # Directories
 #----------------------------------------------------#
 
-def move_it(base_directory, final_directory):
+def move_it(filename, base_directory, final_directory):
 
     try:
+        # check if the file exists in destination
+        log.text(f'Checking if {base_directory}{final_directory}{filename} exists.')
+        if os.path.exists(f"{base_directory}{final_directory}{filename}"):
+            # if it does exist, remove it and notify user
+            os.remove(f"{base_directory}{final_directory}{filename}")
+            log.text(f'Removed {final_directory}{filename}.')
+        # now that the destination is free of duplicates, move to destination and notify user
         shutil.move(file_location, f'{base_directory}{final_directory}')
         log.text(f'Moved {file_location} to {base_directory}{final_directory}.')
     except Exception as ex:
@@ -113,12 +121,12 @@ def file_type_check(file_location):
 
     if file_type in acceptable_filetypes:
         log.text(f"Acceptable file type: {file_type}")
-        return filename, file_location
+        return filename, file_location, file_type
     else:
         error.text(f"Unacceptable file type: {file_type}.  Acceptable file types include {acceptable_filetypes}")   
         
 
-post_title, file_to_post = file_type_check(file_location)
+post_title, file_to_post, file_type = file_type_check(file_location)
 
 #----------------------------------------------------#
 # /Format Check
@@ -135,11 +143,24 @@ if file_to_post:
         try:
             twitter_post_media(post_config('twitter_key'), post_config('twitter_secret'), post_title, file_to_post)
             log.text('Tweet posted successfully.')
-            move_it(base_directory, posted_directory)
+            
         except Exception as ex:
             error.text(f'Tweet unable to post: {ex}')
+    
+        try:
+            post_to_reddit(post_title, file_to_post)
+            log.text('Posted to reddit successfully.')
+
+        except Exception as ex:
+            error.text(f'Unable to post to Reddit: {ex}')
+    
+    
     else:
         log.text('No accounts set to post.')
 
+    move_it(f'{post_title}{file_type}',base_directory, posted_directory)
+    log.text(f'Moved file to {posted_directory}')
+
 else:
-    move_it(base_directory, invalid_directory)
+    move_it(f'{post_title}{file_type}',base_directory, invalid_directory)
+    error.text(f'Moved file to {invalid_directory}')
