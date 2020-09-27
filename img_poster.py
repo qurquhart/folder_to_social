@@ -109,7 +109,6 @@ post_title, file_to_post = file_type_check(file_location)
 
 if file_to_post:
     log.text(f'this is the post title: {post_title}')
-    log.text(f'this is the post title: {file_to_post}')
     # post it
 
     move_it(base_directory, posted_directory)
