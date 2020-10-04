@@ -1,8 +1,9 @@
 import os
 import shutil
 import re
+import glob
 from logger import Logger, creds
-from twitter_api import twitter_post_media, twitter_config
+from twitter_api import twitter_post_media
 from reddit import post_to_reddit
 
 
@@ -11,7 +12,7 @@ from reddit import post_to_reddit
 #----------------------------------------------------#
 
 def post_config(key):
-    credentials = open("post.config")
+    credentials = open("config/post.config")
     found = 0
     for line in credentials:
         search = re.findall(f'{key}=(.*)',line)
@@ -25,13 +26,8 @@ def post_config(key):
 # /Config Setup
 #----------------------------------------------------#
 
-
 #----------------------------------------------------#
 # Logging Setup
-#
-# log.text('test log.text()', send_mail=False)
-# error.text('test error.text()', send_mail=True)
-#
 #----------------------------------------------------#
 
 email_list = ['quintonurquhart@gmail.com']
@@ -50,9 +46,11 @@ error = Logger("error.txt",
              email_list=email_list,
              email_subject="img_poster error log")
 
-
 #----------------------------------------------------#
 # /Logging Setup
+#
+# log.text('test log.text()', send_mail=False)
+# error.text('test error.text()', send_mail=True)
 #----------------------------------------------------#
 
 #----------------------------------------------------#
@@ -67,7 +65,7 @@ def move_it(filename, base_directory, final_directory):
         if os.path.exists(f"{base_directory}{final_directory}{filename}"):
             # if it does exist, remove it and notify user
             os.remove(f"{base_directory}{final_directory}{filename}")
-            log.text(f'Removed {final_directory}{filename}.')
+            log.text(f'File name already exists in destination. Deleting the old file at: {final_directory}{filename}.')
         # now that the destination is free of duplicates, move to destination and notify user
         shutil.move(file_location, f'{base_directory}{final_directory}')
         log.text(f'Moved {file_location} to {base_directory}{final_directory}.')
@@ -87,7 +85,7 @@ def create_dir(base_directory, directory_to_be):
             error.text(f'Unable to create {base_directory}{directory_to_be} directory! - {ex}')
 
 
-base_directory = "./img/"
+base_directory = "img/"
 invalid_directory = "invalid/"
 posted_directory = "posted/"
 
@@ -95,41 +93,48 @@ create_dir(base_directory,"")
 create_dir(base_directory, invalid_directory)
 create_dir(base_directory, posted_directory)
 
-first_file = os.listdir(base_directory)[0]
-if first_file == 'invalid':
-    log.text('Base directory empty. Exiting.')
-    exit()       
-
-file_location = f"{base_directory}{first_file}"
-
-log.text(f'First file in base directory: {first_file}')
-
 #----------------------------------------------------#
 # /Directories
 #----------------------------------------------------#
 
 #----------------------------------------------------#
-# Format Check
+# Validation
 #----------------------------------------------------#
 
-def file_type_check(file_location):
-    
-    file_noextension, file_type = os.path.splitext(file_location)
-    filename = os.path.basename(file_noextension)
+acceptable_filetypes = [".gif",".jpg", ".png"] # ".mp4",
+file_list = []
 
-    acceptable_filetypes = [".mp4",".gif",".jpg", ".png"]
+for filetype in acceptable_filetypes:
+    for f in glob.glob(base_directory+"*"+filetype):
+        file_list.append(f)
 
-    if file_type in acceptable_filetypes:
-        log.text(f"Acceptable file type: {file_type}")
-        return filename, file_location, file_type
-    else:
-        error.text(f"Unacceptable file type: {file_type}.  Acceptable file types include {acceptable_filetypes}")   
-        
+if not file_list:
+    log.text(f'No files with valid file formats found in "{os.path.abspath(base_directory)}".  Acceptable formats include the following: {acceptable_filetypes}.')
+    exit()
+else:
+    first_file = file_list[0]   
 
-post_title, file_to_post, file_type = file_type_check(file_location)
+file_location = first_file
+file_with_extension = os.path.basename(first_file)
+
+log.text(f'First file in base directory: {file_with_extension}')
 
 #----------------------------------------------------#
-# /Format Check
+# /Validation
+#----------------------------------------------------#
+
+#----------------------------------------------------#
+# Formatting
+#----------------------------------------------------#
+
+filepath_noextension, file_type = os.path.splitext(file_location)
+filename = os.path.basename(filepath_noextension)
+
+post_title = filename
+file_to_post = file_location
+
+#----------------------------------------------------#
+# /Formatting
 #----------------------------------------------------#
 
 #----------------------------------------------------#
@@ -158,9 +163,9 @@ if file_to_post:
     else:
         log.text('No accounts set to post.')
 
-    move_it(f'{post_title}{file_type}',base_directory, posted_directory)
+    move_it(f'{os.path.basename(file_location)}',base_directory, posted_directory)
     log.text(f'Moved file to {posted_directory}')
 
 else:
-    move_it(f'{post_title}{file_type}',base_directory, invalid_directory)
+    move_it(f'{os.path.basename(file_location)}',base_directory, invalid_directory)
     error.text(f'Moved file to {invalid_directory}')

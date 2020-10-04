@@ -8,7 +8,7 @@ import re
 
 
 def creds(key):
-    credentials = open("logger.config")
+    credentials = open("config/logger.config")
     found = 0
     for line in credentials:
         search = re.findall(f'{key}=(.*)',line)
@@ -44,7 +44,7 @@ class Logger:
 
         print(log_line)
         os.makedirs(os.path.dirname('logs/'), exist_ok=True)
-        log_file = open(f"logs/{self.filename}", 'a+')
+        log_file = open(f"logs/{self.filename}", 'a+', encoding='utf-8')
         log_file.write(log_line)
         log_file.close()
 
@@ -106,7 +106,7 @@ class Logger:
                 print("[ DEBUG ] Log file not found.")
             else:
 
-                log_file = open(f"logs/{self.filename}", 'r')
+                log_file = open(f"logs/{self.filename}", 'r', encoding='utf-8')
                 log_lines = log_file.readlines()
 
                 if len(log_lines) >= lines:

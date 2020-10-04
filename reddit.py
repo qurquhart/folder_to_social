@@ -3,7 +3,7 @@ import re
 
 
 def reddit_config(key):
-    credentials = open("reddit.config")
+    credentials = open("config/reddit.config")
     found = 0
     for line in credentials:
         search = re.findall(f'{key}=(.*)',line)

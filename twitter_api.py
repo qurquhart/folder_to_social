@@ -3,7 +3,7 @@ import re
 
 
 def twitter_config(key):
-    credentials = open("twitter.config")
+    credentials = open("config/twitter.config")
     found = 0
     for line in credentials:
         search = re.findall(f'{key}=(.*)',line)
